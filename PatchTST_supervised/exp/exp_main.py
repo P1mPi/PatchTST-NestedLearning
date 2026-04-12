@@ -231,55 +231,103 @@ class Exp_Main(Exp_Basic):
             os.makedirs(folder_path)
 
         self.model.eval()
-        with torch.no_grad():
-            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-                batch_x = batch_x.float().to(self.device)
-                batch_y = batch_y.float().to(self.device)
+        # with torch.no_grad():
+        #     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+        #         batch_x = batch_x.float().to(self.device)
+        #         batch_y = batch_y.float().to(self.device)
 
-                batch_x_mark = batch_x_mark.float().to(self.device)
-                batch_y_mark = batch_y_mark.float().to(self.device)
+        #         batch_x_mark = batch_x_mark.float().to(self.device)
+        #         batch_y_mark = batch_y_mark.float().to(self.device)
 
-                # decoder input
-                dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-                dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-                # encoder - decoder
-                if self.args.use_amp:
-                    with torch.cuda.amp.autocast():
-                        if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                        else:
-                            if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-                            else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-                else:
-                    if 'Linear' in self.args.model or 'TST' in self.args.model:
-                            outputs = self.model(batch_x)
-                    else:
-                        if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+        #         # decoder input
+        #         dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
+        #         dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+        #         # encoder - decoder
+        #         if self.args.use_amp:
+        #             with torch.cuda.amp.autocast():
+        #                 if 'Linear' in self.args.model or 'TST' in self.args.model:
+        #                     outputs = self.model(batch_x)
+        #                 else:
+        #                     if self.args.output_attention:
+        #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+        #                     else:
+        #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+        #         else:
+        #             if 'Linear' in self.args.model or 'TST' in self.args.model:
+        #                     outputs = self.model(batch_x)
+        #             else:
+        #                 if self.args.output_attention:
+        #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
 
-                        else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+        #                 else:
+        #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
 
-                f_dim = -1 if self.args.features == 'MS' else 0
-                # print(outputs.shape,batch_y.shape)
-                outputs = outputs[:, -self.args.pred_len:, f_dim:]
-                batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                outputs = outputs.detach().cpu().numpy()
-                batch_y = batch_y.detach().cpu().numpy()
+        #         f_dim = -1 if self.args.features == 'MS' else 0
+        #         # print(outputs.shape,batch_y.shape)
+        #         outputs = outputs[:, -self.args.pred_len:, f_dim:]
+        #         batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+        #         outputs = outputs.detach().cpu().numpy()
+        #         batch_y = batch_y.detach().cpu().numpy()
 
-                pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
-                true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
+        #         pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
+        #         true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
 
-                preds.append(pred)
-                trues.append(true)
-                inputx.append(batch_x.detach().cpu().numpy())
-                if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+        #         preds.append(pred)
+        #         trues.append(true)
+        #         inputx.append(batch_x.detach().cpu().numpy())
+        #         if i % 20 == 0:
+        #             input = batch_x.detach().cpu().numpy()
+        #             gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+        #             pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+        #             visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+        #Congelamos todo menos la cabeza
+        for name, param in self.model.named_parameters():
+            if 'head' in name:
+                param.requires_grad = True  # Fast weights
+            else:
+                param.requires_grad = False # Slow weights
+
+        #Creamos el optimizador para el CMS con LR alto. Ajustar el LR será clave.
+        cms_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=0.005)
+
+        self.model.eval() # Mantiene el dropout apagado para que no haya aleatoriedad y el BN fijo
+        
+        #Bucle de Nested Learning
+        torch.set_grad_enabled(True) 
+        
+        for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+            batch_x = batch_x.float().to(self.device)
+            batch_y = batch_y.float().to(self.device)
+
+            # Inferencia
+            outputs = self.model(batch_x)
+            
+            f_dim = -1 if self.args.features == 'MS' else 0
+            outputs = outputs[:, -self.args.pred_len:, f_dim:]
+            batch_y = batch_y[:, -self.args.pred_len:, f_dim:]
+            
+            # Guardamos el resultado antes de aprender de el
+            pred = outputs.detach().cpu().numpy()
+            true = batch_y.detach().cpu().numpy()
+            preds.append(pred)
+            trues.append(true)
+            
+            # Triggerear el error y hacer que el modelo aprenda.
+            cms_optim.zero_grad()
+            # Calculamos el error usando la predicción (con gradientes activos) y la realidad
+            loss = criterion(outputs, batch_y)
+            loss.backward()
+            cms_optim.step() 
+
+            # Guardar visualizaciones cada cierto tiempo
+            if i % 10 == 0:
+                input = batch_x.detach().cpu().numpy()
+                gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+                pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+                visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+        torch.set_grad_enabled(False) # Restauramos el estado por seguridad
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))
