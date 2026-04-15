@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch import optim
 from torch.optim import lr_scheduler 
 
-from m3_optim import M3Optimizer
+from M3_optim import M3Optimizer
 
 import os
 import time
