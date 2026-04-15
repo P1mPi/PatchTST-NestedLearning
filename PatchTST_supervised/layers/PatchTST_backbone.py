@@ -59,25 +59,55 @@ class PatchTST_backbone(nn.Module):
             self.head = CMS_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         
     
-    def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
+    # def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
+    #     # norm
+    #     if self.revin: 
+    #         z = z.permute(0,2,1)
+    #         z = self.revin_layer(z, 'norm')
+    #         z = z.permute(0,2,1)
+            
+    #     # do patching
+    #     if self.padding_patch == 'end':
+    #         z = self.padding_patch_layer(z)
+    #     z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)                   # z: [bs x nvars x patch_num x patch_len]
+    #     z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_len x patch_num]
+        
+    #     # model
+    #     z = self.backbone(z)                                                                # z: [bs x nvars x d_model x patch_num]
+    #     z = self.head(z)                                                                    # z: [bs x nvars x target_window] 
+        
+    #     # denorm
+    #     if self.revin: 
+    #         z = z.permute(0,2,1)
+    #         z = self.revin_layer(z, 'denorm')
+    #         z = z.permute(0,2,1)
+    #     return z
+    def forward(self, z, cms_mode=False):                  # z: [bs x nvars x seq_len]
         # norm
-        if self.revin: 
+        if self.revin:
             z = z.permute(0,2,1)
             z = self.revin_layer(z, 'norm')
             z = z.permute(0,2,1)
-            
-        # do patching
+
+        # patching
         if self.padding_patch == 'end':
             z = self.padding_patch_layer(z)
-        z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)                   # z: [bs x nvars x patch_num x patch_len]
-        z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_len x patch_num]
-        
-        # model
-        z = self.backbone(z)                                                                # z: [bs x nvars x d_model x patch_num]
-        z = self.head(z)                                                                    # z: [bs x nvars x target_window] 
-        
+        z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)  # [bs x nvars x patch_num x patch_len]
+        z = z.permute(0,1,3,2)                                             # [bs x nvars x patch_len x patch_num]
+
+        # backbone: sin gradientes en cms_mode
+        if cms_mode:
+            with torch.no_grad():
+                z = self.backbone(z)
+            z = z.detach()  # desacopla limpiamente; la head reconstruirá el grafo
+        else:
+            z = self.backbone(z)
+
+        # head: siempre con gradientes
+        z = self.head(z)                                                   # [bs x nvars x target_window]
+
         # denorm
-        if self.revin: 
+        if self.revin:
             z = z.permute(0,2,1)
             z = self.revin_layer(z, 'denorm')
             z = z.permute(0,2,1)

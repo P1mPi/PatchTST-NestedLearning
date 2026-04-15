@@ -35,6 +35,7 @@ do
       --dropout 0.3\
       --fc_dropout 0.3\
       --head_dropout 0\
+      --head_type cms\
       --patch_len 24\
       --stride 2\
       --des 'Exp' \

@@ -10,6 +10,8 @@ import torch.nn as nn
 from torch import optim
 from torch.optim import lr_scheduler 
 
+from m3_optim import M3Optimizer
+
 import os
 import time
 
@@ -44,7 +46,8 @@ class Exp_Main(Exp_Basic):
         return data_set, data_loader
 
     def _select_optimizer(self):
-        model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+        model_optim = M3Optimizer(self.model.parameters(), lr=self.args.learning_rate, alpha=0.1)
+        #model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         return model_optim
 
     def _select_criterion(self):
@@ -216,149 +219,245 @@ class Exp_Main(Exp_Basic):
 
         return self.model
 
+    # def test(self, setting, test=0):
+    #     test_data, test_loader = self._get_data(flag='test')
+        
+    #     if test:
+    #         print('loading model')
+    #         self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
+
+    #     # Definimos el criterio de error (Loss)
+    #     criterion = self._select_criterion()
+    #     preds = []
+    #     trues = []
+    #     inputx = []
+    #     folder_path = './test_results/' + setting + '/'
+    #     if not os.path.exists(folder_path):
+    #         os.makedirs(folder_path)
+
+    #     self.model.eval()
+    #     # with torch.no_grad():
+    #     #     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+    #     #         batch_x = batch_x.float().to(self.device)
+    #     #         batch_y = batch_y.float().to(self.device)
+
+    #     #         batch_x_mark = batch_x_mark.float().to(self.device)
+    #     #         batch_y_mark = batch_y_mark.float().to(self.device)
+
+    #     #         # decoder input
+    #     #         dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
+    #     #         dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+    #     #         # encoder - decoder
+    #     #         if self.args.use_amp:
+    #     #             with torch.cuda.amp.autocast():
+    #     #                 if 'Linear' in self.args.model or 'TST' in self.args.model:
+    #     #                     outputs = self.model(batch_x)
+    #     #                 else:
+    #     #                     if self.args.output_attention:
+    #     #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+    #     #                     else:
+    #     #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+    #     #         else:
+    #     #             if 'Linear' in self.args.model or 'TST' in self.args.model:
+    #     #                     outputs = self.model(batch_x)
+    #     #             else:
+    #     #                 if self.args.output_attention:
+    #     #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+
+    #     #                 else:
+    #     #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+
+    #     #         f_dim = -1 if self.args.features == 'MS' else 0
+    #     #         # print(outputs.shape,batch_y.shape)
+    #     #         outputs = outputs[:, -self.args.pred_len:, f_dim:]
+    #     #         batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
+    #     #         outputs = outputs.detach().cpu().numpy()
+    #     #         batch_y = batch_y.detach().cpu().numpy()
+
+    #     #         pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
+    #     #         true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
+
+    #     #         preds.append(pred)
+    #     #         trues.append(true)
+    #     #         inputx.append(batch_x.detach().cpu().numpy())
+    #     #         if i % 20 == 0:
+    #     #             input = batch_x.detach().cpu().numpy()
+    #     #             gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+    #     #             pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+    #     #             visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+    #     #Congelamos todo menos la cabeza
+    #     for name, param in self.model.named_parameters():
+    #         if 'head' in name:
+    #             param.requires_grad = True  # Fast weights
+    #         else:
+    #             param.requires_grad = False # Slow weights
+
+    #     #Creamos el optimizador para el CMS con LR alto. Ajustar el LR será clave.
+    #     cms_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=0.005)
+
+    #     self.model.eval() # Mantiene el dropout apagado para que no haya aleatoriedad y el BN fijo
+        
+    #     #Bucle de Nested Learning
+    #     torch.set_grad_enabled(True) 
+        
+    #     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+    #         batch_x = batch_x.float().to(self.device)
+    #         batch_y = batch_y.float().to(self.device)
+
+    #         # Inferencia — el grafo se construye aquí
+    #         outputs = self.model(batch_x)
+            
+    #         f_dim = -1 if self.args.features == 'MS' else 0
+    #         outputs = outputs[:, -self.args.pred_len:, f_dim:]
+    #         batch_y = batch_y[:, -self.args.pred_len:, f_dim:]
+            
+    #         # Paso de aprendizaje ANTES de detachear
+    #         cms_optim.zero_grad()
+    #         loss = criterion(outputs, batch_y)  # outputs aún tiene grad_fn
+    #         loss.backward()
+    #         cms_optim.step()
+
+    #         # Guardamos DESPUÉS de backprop, ahora sí podemos detachear
+    #         pred = outputs.detach().cpu().numpy()
+    #         true = batch_y.detach().cpu().numpy()
+    #         preds.append(pred)
+    #         trues.append(true)
+    #         inputx.append(batch_x.detach().cpu().numpy())
+            
+    #         # Triggerear el error y hacer que el modelo aprenda.
+    #         cms_optim.zero_grad()
+    #         # Calculamos el error usando la predicción (con gradientes activos) y la realidad
+    #         loss = criterion(outputs, batch_y)
+    #         loss.backward()
+    #         cms_optim.step() 
+
+    #         # Guardar visualizaciones cada cierto tiempo
+    #         if i % 10 == 0:
+    #             input = batch_x.detach().cpu().numpy()
+    #             gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+    #             pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+    #             visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+    #     torch.set_grad_enabled(False) # Restauramos el estado por seguridad
+
+    #     if self.args.test_flop:
+    #         test_params_flop((batch_x.shape[1],batch_x.shape[2]))
+    #         exit()
+    #     preds = np.array(preds)
+    #     trues = np.array(trues)
+    #     inputx = np.array(inputx)
+
+    #     preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
+    #     trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
+    #     inputx = inputx.reshape(-1, inputx.shape[-2], inputx.shape[-1])
+
+    #     # result save
+    #     folder_path = './results/' + setting + '/'
+    #     if not os.path.exists(folder_path):
+    #         os.makedirs(folder_path)
+
+    #     mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
+    #     print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+    #     f = open("result.txt", 'a')
+    #     f.write(setting + "  \n")
+    #     f.write('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+    #     f.write('\n')
+    #     f.write('\n')
+    #     f.close()
+
+    #     # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
+    #     np.save(folder_path + 'pred.npy', preds)
+    #     # np.save(folder_path + 'true.npy', trues)
+    #     # np.save(folder_path + 'x.npy', inputx)
+    #     return
+
+
+    #Nuevo test para NL
     def test(self, setting, test=0):
         test_data, test_loader = self._get_data(flag='test')
-        
+
         if test:
             print('loading model')
-            self.model.load_state_dict(torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth')))
+            self.model.load_state_dict(
+                torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth'))
+            )
 
-        preds = []
-        trues = []
-        inputx = []
+        criterion = self._select_criterion()
+        preds, trues, inputx = [], [], []
+
         folder_path = './test_results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        self.model.eval()
-        # with torch.no_grad():
-        #     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-        #         batch_x = batch_x.float().to(self.device)
-        #         batch_y = batch_y.float().to(self.device)
+        # Optimizador solo para la head
+        cms_optim = optim.Adam(
+            [p for name, p in self.model.named_parameters() if 'head' in name],
+            lr=0.001
+        )
 
-        #         batch_x_mark = batch_x_mark.float().to(self.device)
-        #         batch_y_mark = batch_y_mark.float().to(self.device)
-
-        #         # decoder input
-        #         dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
-        #         dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
-        #         # encoder - decoder
-        #         if self.args.use_amp:
-        #             with torch.cuda.amp.autocast():
-        #                 if 'Linear' in self.args.model or 'TST' in self.args.model:
-        #                     outputs = self.model(batch_x)
-        #                 else:
-        #                     if self.args.output_attention:
-        #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-        #                     else:
-        #                         outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-        #         else:
-        #             if 'Linear' in self.args.model or 'TST' in self.args.model:
-        #                     outputs = self.model(batch_x)
-        #             else:
-        #                 if self.args.output_attention:
-        #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
-
-        #                 else:
-        #                     outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
-
-        #         f_dim = -1 if self.args.features == 'MS' else 0
-        #         # print(outputs.shape,batch_y.shape)
-        #         outputs = outputs[:, -self.args.pred_len:, f_dim:]
-        #         batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-        #         outputs = outputs.detach().cpu().numpy()
-        #         batch_y = batch_y.detach().cpu().numpy()
-
-        #         pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
-        #         true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
-
-        #         preds.append(pred)
-        #         trues.append(true)
-        #         inputx.append(batch_x.detach().cpu().numpy())
-        #         if i % 20 == 0:
-        #             input = batch_x.detach().cpu().numpy()
-        #             gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-        #             pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-        #             visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
-
-        #Congelamos todo menos la cabeza
-        for name, param in self.model.named_parameters():
+        # Backbone en eval (BN y Dropout fijos), head en train
+        for name, module in self.model.named_modules():
             if 'head' in name:
-                param.requires_grad = True  # Fast weights
+                module.train()
             else:
-                param.requires_grad = False # Slow weights
+                module.eval()
 
-        #Creamos el optimizador para el CMS con LR alto. Ajustar el LR será clave.
-        cms_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=0.005)
-
-        self.model.eval() # Mantiene el dropout apagado para que no haya aleatoriedad y el BN fijo
-        
-        #Bucle de Nested Learning
-        torch.set_grad_enabled(True) 
-        
         for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-            batch_x = batch_x.float().to(self.device)
-            batch_y = batch_y.float().to(self.device)
+            batch_x   = batch_x.float().to(self.device)
+            batch_y   = batch_y.float().to(self.device)
 
-            # Inferencia
-            outputs = self.model(batch_x)
-            
-            f_dim = -1 if self.args.features == 'MS' else 0
-            outputs = outputs[:, -self.args.pred_len:, f_dim:]
-            batch_y = batch_y[:, -self.args.pred_len:, f_dim:]
-            
-            # Guardamos el resultado antes de aprender de el
+            # Forward: backbone sin grad, head con grad
+            outputs = self.model(batch_x, cms_mode=True)
+
+            f_dim     = -1 if self.args.features == 'MS' else 0
+            outputs   = outputs[:, -self.args.pred_len:, f_dim:]
+            batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
+
+            # Backward sobre la head
+            cms_optim.zero_grad()
+            loss = criterion(outputs, batch_y_s)
+            loss.backward()
+            cms_optim.step()
+
+            # Guardar predicciones
             pred = outputs.detach().cpu().numpy()
-            true = batch_y.detach().cpu().numpy()
+            true = batch_y_s.detach().cpu().numpy()
             preds.append(pred)
             trues.append(true)
-            
-            # Triggerear el error y hacer que el modelo aprenda.
-            cms_optim.zero_grad()
-            # Calculamos el error usando la predicción (con gradientes activos) y la realidad
-            loss = criterion(outputs, batch_y)
-            loss.backward()
-            cms_optim.step() 
+            inputx.append(batch_x.detach().cpu().numpy())
 
-            # Guardar visualizaciones cada cierto tiempo
+            #guarda cada 10 en las gráficas.
             if i % 10 == 0:
-                input = batch_x.detach().cpu().numpy()
-                gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
-
-        torch.set_grad_enabled(False) # Restauramos el estado por seguridad
+                inp  = batch_x.detach().cpu().numpy()
+                gt   = np.concatenate((inp[0, :, -1], true[0, :, -1]), axis=0)
+                pd_v = np.concatenate((inp[0, :, -1], pred[0, :, -1]), axis=0)
+                visual(gt, pd_v, os.path.join(folder_path, str(i) + '.pdf'))
 
         if self.args.test_flop:
-            test_params_flop((batch_x.shape[1],batch_x.shape[2]))
+            test_params_flop((batch_x.shape[1], batch_x.shape[2]))
             exit()
-        preds = np.array(preds)
-        trues = np.array(trues)
-        inputx = np.array(inputx)
 
-        preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
-        trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
-        inputx = inputx.reshape(-1, inputx.shape[-2], inputx.shape[-1])
+        preds  = np.array(preds).reshape(-1, preds[0].shape[-2],  preds[0].shape[-1])
+        trues  = np.array(trues).reshape(-1, trues[0].shape[-2],  trues[0].shape[-1])
+        inputx = np.array(inputx).reshape(-1, inputx[0].shape[-2], inputx[0].shape[-1])
 
-        # result save
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+
         f = open("result.txt", 'a')
         f.write(setting + "  \n")
         f.write('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
-        f.write('\n')
-        f.write('\n')
+        f.write('\n\n')
         f.close()
 
-        # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
         np.save(folder_path + 'pred.npy', preds)
-        # np.save(folder_path + 'true.npy', trues)
-        # np.save(folder_path + 'x.npy', inputx)
         return
+    
 
     def predict(self, setting, load=False):
         pred_data, pred_loader = self._get_data(flag='pred')
