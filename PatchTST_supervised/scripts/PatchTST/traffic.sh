@@ -1,3 +1,6 @@
+MI_MODEL_ID=${1:-"Experimento"} 
+MI_DES=${2:-"Sin_Descripcion"}
+
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
@@ -21,7 +24,8 @@ do
       --is_training 1 \
       --root_path $root_path_name \
       --data_path $data_path_name \
-      --model_id $model_id_name_$seq_len'_'$pred_len \
+      --model_id ${MI_MODEL_ID}_$seq_len'_'$pred_len \
+      --des "$MI_DES" \
       --model $model_name \
       --data $data_name \
       --features M \
@@ -35,6 +39,7 @@ do
       --dropout 0.2\
       --fc_dropout 0.2\
       --head_dropout 0\
+      --head_type cms\
       --patch_len 16\
       --stride 8\
       --des 'Exp' \
