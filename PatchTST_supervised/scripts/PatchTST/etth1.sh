@@ -1,5 +1,10 @@
 MI_MODEL_ID=${1:-"Experimento"} 
 MI_DES=${2:-"Sin_Descripcion"}
+CABECERA=${3:-"flatten"}
+CMS_LR=${4:-"0.0001"}       
+POLICY=${5:-"spc"}          
+
+
 
 if [ ! -d "./logs" ]; then
     mkdir ./logs
@@ -36,13 +41,16 @@ do
       --n_heads 4 \
       --d_model 16 \
       --d_ff 128 \
-      --dropout 0.3\
-      --fc_dropout 0.3\
-      --head_dropout 0\
-      --head_type cms\
-      --patch_len 16\
+      --dropout 0.3 \
+      --fc_dropout 0.3 \
+      --head_dropout 0 \
+      --head_type ${CABECERA} \
+      --cms_lr "$CMS_LR" \
+      --update_policy "$POLICY" \
+      --patch_len 16 \
       --stride 8\
-      --des 'Exp' \
-      --train_epochs 100\
-      --itr 1 --batch_size 128 --learning_rate 0.0001 >logs/LongForecasting/$model_name'_'$model_id_name'_'$seq_len'_'$pred_len.log 
+      --train_epochs 100 \
+      --use_gpu 1 \
+      --num_workers 0 \
+      --itr 1 --batch_size 128 --learning_rate 0.0001 
 done

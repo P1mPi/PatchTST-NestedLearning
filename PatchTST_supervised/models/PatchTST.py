@@ -33,6 +33,7 @@ class Model(nn.Module):
         head_dropout = configs.head_dropout
         
         individual = configs.individual
+        head_type = configs.head_type
     
         patch_len = configs.patch_len
         stride = configs.stride

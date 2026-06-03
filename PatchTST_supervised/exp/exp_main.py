@@ -373,7 +373,103 @@ class Exp_Main(Exp_Basic):
     #     return
 
 
+    #==========================
+    #TEST FUNCIONALIDAD NESTED LEARNING CON TRIGGER ESTADÍSTICO DE DRIFT
+    #==========================
+
     #Nuevo test para NL
+    # def test(self, setting, test=0):
+    #     test_data, test_loader = self._get_data(flag='test')
+
+    #     update_freq = 5  # Cada cuántas iteraciones actualizar la cabeza. Ajustar
+
+    #     if test:
+    #         print('loading model')
+    #         self.model.load_state_dict(
+    #             torch.load(os.path.join('./checkpoints/' + setting, 'checkpoint.pth'))
+    #         )
+
+    #     criterion = self._select_criterion()
+    #     preds, trues, inputx = [], [], []
+
+    #     folder_path = './test_results/' + setting + '/'
+    #     if not os.path.exists(folder_path):
+    #         os.makedirs(folder_path)
+
+    #     # Optimizador solo para la head
+    #     cms_optim = optim.Adam(
+    #         [p for name, p in self.model.named_parameters() if 'head' in name],
+    #         lr=0.0001
+    #     )
+
+    #     # Backbone en eval (BN y Dropout fijos), head en train
+    #     for name, module in self.model.named_modules():
+    #         if 'head' in name:
+    #             module.train()
+    #         else:
+    #             module.eval()
+
+    #     for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+    #         batch_x   = batch_x.float().to(self.device)
+    #         batch_y   = batch_y.float().to(self.device)
+
+    #         # Forward: backbone sin grad, head con grad
+    #         outputs = self.model(batch_x, cms_mode=True)
+
+    #         f_dim     = -1 if self.args.features == 'MS' else 0
+    #         outputs   = outputs[:, -self.args.pred_len:, f_dim:]
+    #         batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
+
+    #         # Backward sobre la head
+    #         if i % update_freq == 0:
+    #             cms_optim.zero_grad()
+    #             loss = criterion(outputs, batch_y_s)
+    #             loss.backward()
+    #             cms_optim.step()
+
+    #         # Guardar predicciones
+    #         pred = outputs.detach().cpu().numpy()
+    #         true = batch_y_s.detach().cpu().numpy()
+    #         preds.append(pred)
+    #         trues.append(true)
+    #         inputx.append(batch_x.detach().cpu().numpy())
+
+    #         #guarda cada 10 en las gráficas.
+    #         if i % 10 == 0:
+    #             inp  = batch_x.detach().cpu().numpy()
+    #             gt   = np.concatenate((inp[0, :, -1], true[0, :, -1]), axis=0)
+    #             pd_v = np.concatenate((inp[0, :, -1], pred[0, :, -1]), axis=0)
+    #             visual(gt, pd_v, os.path.join(folder_path, str(i) + '.pdf'))
+
+    #     if self.args.test_flop:
+    #         test_params_flop((batch_x.shape[1], batch_x.shape[2]))
+    #         exit()
+
+    #     preds  = np.array(preds).reshape(-1, preds[0].shape[-2],  preds[0].shape[-1])
+    #     trues  = np.array(trues).reshape(-1, trues[0].shape[-2],  trues[0].shape[-1])
+    #     inputx = np.array(inputx).reshape(-1, inputx[0].shape[-2], inputx[0].shape[-1])
+
+    #     folder_path = './results/' + setting + '/'
+    #     if not os.path.exists(folder_path):
+    #         os.makedirs(folder_path)
+
+    #     mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
+    #     print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+
+    #     f = open("result.txt", 'a')
+    #     f.write(setting + "  \n")
+    #     f.write('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+    #     f.write('\n\n')
+    #     f.close()
+
+    #     np.save(folder_path + 'pred.npy', preds)
+    #     return
+
+    #======================
+    #TEST NL CON TRIGGER ESTADÍSTICO DE DRIFT (ERRORS PUNTO A PUNTO)
+    #======================
+    # Nuevo test para NL con Trigger Estadístico
+    # Nuevo test para NL con Trigger Dinámico y soporte de Baseline inteligente
     def test(self, setting, test=0):
         test_data, test_loader = self._get_data(flag='test')
 
@@ -390,49 +486,127 @@ class Exp_Main(Exp_Basic):
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        # Optimizador solo para la head
-        cms_optim = optim.Adam(
-            [p for name, p in self.model.named_parameters() if 'head' in name],
-            lr=0.001
-        )
+  
+        # Es estático si la política es 'none' o el learning rate de inferencia es 0
+        is_static = (getattr(self.args, 'update_policy', 'none') == 'none') or (getattr(self.args, 'cms_lr', 0.0) == 0.0)
 
-        # Backbone en eval (BN y Dropout fijos), head en train
-        for name, module in self.model.named_modules():
-            if 'head' in name:
-                module.train()
-            else:
-                module.eval()
+        # BASELINE
+        if is_static:
+            print(" Ejecutando Inferencia ESTÁTICA ")
+            self.model.eval()
+            with torch.no_grad():
+                for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+                    batch_x = batch_x.float().to(self.device)
+                    batch_y = batch_y.float().to(self.device)
 
-        for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
-            batch_x   = batch_x.float().to(self.device)
-            batch_y   = batch_y.float().to(self.device)
+                    outputs = self.model(batch_x)
 
-            # Forward: backbone sin grad, head con grad
-            outputs = self.model(batch_x, cms_mode=True)
+                    f_dim     = -1 if self.args.features == 'MS' else 0
+                    outputs   = outputs[:, -self.args.pred_len:, f_dim:]
+                    batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
 
-            f_dim     = -1 if self.args.features == 'MS' else 0
-            outputs   = outputs[:, -self.args.pred_len:, f_dim:]
-            batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
+                    pred = outputs.detach().cpu().numpy()
+                    true = batch_y_s.detach().cpu().numpy()
+                    preds.append(pred)
+                    trues.append(true)
+                    inputx.append(batch_x.detach().cpu().numpy())
 
-            # Backward sobre la head
-            cms_optim.zero_grad()
-            loss = criterion(outputs, batch_y_s)
-            loss.backward()
-            cms_optim.step()
+                    if i % 10 == 0:
+                        inp  = batch_x.detach().cpu().numpy()
+                        gt   = np.concatenate((inp[0, :, -1], true[0, :, -1]), axis=0)
+                        pd_v = np.concatenate((inp[0, :, -1], pred[0, :, -1]), axis=0)
+                        visual(gt, pd_v, os.path.join(folder_path, str(i) + '.pdf'))
 
-            # Guardar predicciones
-            pred = outputs.detach().cpu().numpy()
-            true = batch_y_s.detach().cpu().numpy()
-            preds.append(pred)
-            trues.append(true)
-            inputx.append(batch_x.detach().cpu().numpy())
 
-            #guarda cada 10 en las gráficas.
-            if i % 10 == 0:
-                inp  = batch_x.detach().cpu().numpy()
-                gt   = np.concatenate((inp[0, :, -1], true[0, :, -1]), axis=0)
-                pd_v = np.concatenate((inp[0, :, -1], pred[0, :, -1]), axis=0)
-                visual(gt, pd_v, os.path.join(folder_path, str(i) + '.pdf'))
+        # NESTED LEARNING
+        # Aquí entra 'cms', 'cms3' y también 'flatten_nl' si LR > 0
+        else:
+            target_name = 'head'
+            print(f" Ejecutando Inferencia DINÁMICA (Nested Learning con {self.args.head_type})")
+            print(f"  -> Política: {self.args.update_policy} | LR: {self.args.cms_lr} | Target: {target_name}")
+
+            # Backbone en eval (BN y Dropout fijos), target en train
+            for name, module in self.model.named_modules():
+                if target_name in name:
+                    module.train()
+                else:
+                    module.eval()
+
+            # Congelamos los gradientes de todo excepto del target
+            for name, param in self.model.named_parameters():
+                if target_name in name:
+                    param.requires_grad = True  # Fast weights (aprenden)
+                else:
+                    param.requires_grad = False # Slow weights congelados
+
+            # Optimizador con el LR dinámico
+            cms_optim = optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr, momentum=0.9)
+
+            torch.set_grad_enabled(True) 
+            
+            prev_errors = None
+            veces_actualizado = 0
+            
+            for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
+                batch_x   = batch_x.float().to(self.device)
+                batch_y   = batch_y.float().to(self.device)
+
+                do_detach = (target_name == 'head') 
+                outputs = self.model(batch_x, cms_mode=do_detach)
+
+                f_dim     = -1 if self.args.features == 'MS' else 0
+                outputs   = outputs[:, -self.args.pred_len:, f_dim:]
+                batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
+
+                # Error escalar y punto a punto
+                loss = criterion(outputs, batch_y_s) 
+                point_errors = (outputs - batch_y_s) ** 2 
+
+                # CONTROL DEL TRIGGER DE ACTUALIZACIÓN
+                actualizar = False
+                policy = self.args.update_policy
+
+                if policy == 'always':
+                    actualizar = True
+                elif policy == '5steps':
+                    update_freq = 5
+                    if i % update_freq == 0:
+                        actualizar = True
+                elif policy == 'spc':
+                    if prev_errors is not None:
+                        mu = prev_errors.mean()
+                        sigma = prev_errors.std()
+                        umbral = mu + (2.0 * sigma)
+                        
+                        if loss.item() > umbral.item():
+                            actualizar = True
+
+                # Backward y Step sobre el target
+                if actualizar:
+                    cms_optim.zero_grad()
+                    loss.backward()
+                    cms_optim.step()
+                    veces_actualizado += 1
+
+                prev_errors = point_errors.detach()
+
+                # Guardar predicciones
+                pred = outputs.detach().cpu().numpy()
+                true = batch_y_s.detach().cpu().numpy()
+                preds.append(pred)
+                trues.append(true)
+                inputx.append(batch_x.detach().cpu().numpy())
+
+                # Guardar visualizaciones
+                if i % 10 == 0:
+                    inp  = batch_x.detach().cpu().numpy()
+                    gt   = np.concatenate((inp[0, :, -1], true[0, :, -1]), axis=0)
+                    pd_v = np.concatenate((inp[0, :, -1], pred[0, :, -1]), axis=0)
+                    visual(gt, pd_v, os.path.join(folder_path, str(i) + '.pdf'))
+
+            torch.set_grad_enabled(False) 
+            print(f"\nRESUMEN: El CMS se actualizó {veces_actualizado} veces de {len(test_loader)} posibles.\n")
+
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1], batch_x.shape[2]))
@@ -449,6 +623,7 @@ class Exp_Main(Exp_Basic):
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
 
+        # Escribir en result.txt
         f = open("result.txt", 'a')
         f.write(setting + "  \n")
         f.write('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))

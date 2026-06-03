@@ -57,6 +57,8 @@ class PatchTST_backbone(nn.Module):
             self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         elif head_type == 'cms':
             self.head = CMS_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
+        elif head_type == 'cms3':
+            self.head = CMS_Head_3L(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
         
     
     # def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
@@ -338,7 +340,64 @@ class TSTEncoderLayer(nn.Module):
             return src
 
 
+class CMS_Head_3L(nn.Module):
+    def __init__(self, individual, n_vars, nf, target_window, head_dropout=0):
+        super().__init__()
+        self.individual = individual
+        self.n_vars = n_vars
 
+        # Definición del módulo. MLP con 3 capas (2 ocultas + 1 de salida)
+        hidden_dim_1 = 128 # Neuronas de la primera capa oculta
+        hidden_dim_2 = 64  # Neuronas de la segunda capa oculta (estructura de embudo)
+
+        if self.individual: # Para respetar la independencia entre canales
+            self.mlps = nn.ModuleList()
+            for i in range(self.n_vars):
+                self.mlps.append(nn.Sequential(
+                    nn.Flatten(start_dim=-2),
+                    
+                    # Capa Oculta 1
+                    nn.Linear(nf, hidden_dim_1),
+                    nn.GELU(),
+                    nn.Dropout(head_dropout),
+                    
+                    # Capa Oculta 2 (¡NUEVA!)
+                    nn.Linear(hidden_dim_1, hidden_dim_2),
+                    nn.GELU(),
+                    nn.Dropout(head_dropout),
+                    
+                    # Capa de Salida
+                    nn.Linear(hidden_dim_2, target_window)
+                ))
+        else:   # Si no se requiere independencia, solo se crea un MLP global
+            self.mlp = nn.Sequential(
+                nn.Flatten(start_dim=-2),
+                
+                # Capa Oculta 1
+                nn.Linear(nf, hidden_dim_1),
+                nn.GELU(),
+                nn.Dropout(head_dropout),
+                
+                # Capa Oculta 2 (¡NUEVA!)
+                nn.Linear(hidden_dim_1, hidden_dim_2),
+                nn.GELU(),
+                nn.Dropout(head_dropout),
+                
+                # Capa de Salida
+                nn.Linear(hidden_dim_2, target_window)
+            )
+        
+    def forward(self, x):
+        # x: [bs x nvars x d_model x patch_num]
+        if self.individual:
+            x_out =[]
+            for i in range(self.n_vars):
+                z = self.mlps[i](x[:,i,:,:]) # Pasa por el MLP de 3 capas
+                x_out.append(z)
+            x = torch.stack(x_out, dim=1)                 
+        else:
+            x = self.mlp(x) # Hay un solo MLP 
+        return x
 
 class _MultiheadAttention(nn.Module):
     def __init__(self, d_model, n_heads, d_k=None, d_v=None, res_attention=False, attn_dropout=0., proj_dropout=0., qkv_bias=True, lsa=False):

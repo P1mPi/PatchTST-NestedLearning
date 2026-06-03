@@ -1,0 +1,280 @@
+Traceback (most recent call last):
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/run_longExp.py", line 141, in <module>
+    exp.train(setting)
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/exp/exp_main.py", line 166, in train
+    outputs = self.model(batch_x)
+              ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/models/PatchTST.py", line 105, in forward
+    x = self.model(x, cms_mode=cms_mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 106, in forward
+    z = self.backbone(z)
+        ^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 241, in forward
+    z = self.encoder(u)                                                      # z: [bs * nvars x patch_num x d_model]
+        ^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 266, in forward
+    for mod in self.layers: output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 317, in forward
+    src2, attn, scores = self.self_attn(src, src, src, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 442, in forward
+    output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 484, in forward
+    attn_scores = torch.matmul(q, k) * self.scale      # attn_scores : [bs x n_heads x max_q_len x q_len]
+                  ^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.18 GiB. GPU 0 has a total capacity of 23.64 GiB of which 546.50 MiB is free. Including non-PyTorch memory, this process has 23.11 GiB memory in use. Of the allocated memory 22.72 GiB is allocated by PyTorch, and 194.47 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/run_longExp.py", line 141, in <module>
+    exp.train(setting)
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/exp/exp_main.py", line 166, in train
+    outputs = self.model(batch_x)
+              ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/models/PatchTST.py", line 105, in forward
+    x = self.model(x, cms_mode=cms_mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 106, in forward
+    z = self.backbone(z)
+        ^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 241, in forward
+    z = self.encoder(u)                                                      # z: [bs * nvars x patch_num x d_model]
+        ^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 266, in forward
+    for mod in self.layers: output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 317, in forward
+    src2, attn, scores = self.self_attn(src, src, src, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 442, in forward
+    output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 484, in forward
+    attn_scores = torch.matmul(q, k) * self.scale      # attn_scores : [bs x n_heads x max_q_len x q_len]
+                  ^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.18 GiB. GPU 0 has a total capacity of 23.64 GiB of which 554.50 MiB is free. Including non-PyTorch memory, this process has 23.10 GiB memory in use. Of the allocated memory 22.74 GiB is allocated by PyTorch, and 169.32 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/run_longExp.py", line 141, in <module>
+    exp.train(setting)
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/exp/exp_main.py", line 166, in train
+    outputs = self.model(batch_x)
+              ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/models/PatchTST.py", line 105, in forward
+    x = self.model(x, cms_mode=cms_mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 106, in forward
+    z = self.backbone(z)
+        ^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 241, in forward
+    z = self.encoder(u)                                                      # z: [bs * nvars x patch_num x d_model]
+        ^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 266, in forward
+    for mod in self.layers: output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 317, in forward
+    src2, attn, scores = self.self_attn(src, src, src, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 442, in forward
+    output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 484, in forward
+    attn_scores = torch.matmul(q, k) * self.scale      # attn_scores : [bs x n_heads x max_q_len x q_len]
+                  ^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.18 GiB. GPU 0 has a total capacity of 23.64 GiB of which 530.50 MiB is free. Including non-PyTorch memory, this process has 23.12 GiB memory in use. Of the allocated memory 22.76 GiB is allocated by PyTorch, and 167.58 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/run_longExp.py", line 141, in <module>
+    exp.train(setting)
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/exp/exp_main.py", line 166, in train
+    outputs = self.model(batch_x)
+              ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/models/PatchTST.py", line 105, in forward
+    x = self.model(x, cms_mode=cms_mode)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 106, in forward
+    z = self.backbone(z)
+        ^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 241, in forward
+    z = self.encoder(u)                                                      # z: [bs * nvars x patch_num x d_model]
+        ^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 266, in forward
+    for mod in self.layers: output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 317, in forward
+    src2, attn, scores = self.self_attn(src, src, src, prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 442, in forward
+    output, attn_weights, attn_scores = self.sdp_attn(q_s, k_s, v_s, prev=prev, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/envs/env1/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/homeGPU/p4bl0s/PrimerCMS/PatchTST-NestedLearning/PatchTST_supervised/layers/PatchTST_backbone.py", line 484, in forward
+    attn_scores = torch.matmul(q, k) * self.scale      # attn_scores : [bs x n_heads x max_q_len x q_len]
+                  ^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.18 GiB. GPU 0 has a total capacity of 23.64 GiB of which 448.50 MiB is free. Including non-PyTorch memory, this process has 23.20 GiB memory in use. Of the allocated memory 22.83 GiB is allocated by PyTorch, and 181.92 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

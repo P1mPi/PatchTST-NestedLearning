@@ -1,0 +1,38 @@
+==========================================================
+Lanzando Experimento: Flatten_etth1 | Dataset: etth1
+==========================================================
+Args in experiment:
+Namespace(random_seed=2021, is_training=1, model_id='Flatten_etth1_336_96', model='PatchTST', data='ETTh1', root_path='./dataset/', data_path='ETTh1.csv', features='M', target='OT', freq='h', checkpoints='./checkpoints/', seq_len=336, label_len=48, pred_len=96, head_type='flatten', fc_dropout=0.3, head_dropout=0.0, patch_len=16, stride=8, padding_patch='end', revin=1, affine=0, subtract_last=0, decomposition=0, kernel_size=25, individual=0, embed_type=0, enc_in=7, dec_in=7, c_out=7, d_model=16, n_heads=4, e_layers=3, d_layers=1, d_ff=128, moving_avg=25, factor=1, distil=True, dropout=0.3, embed='timeF', activation='gelu', output_attention=False, do_predict=False, num_workers=0, itr=1, train_epochs=100, batch_size=128, patience=100, learning_rate=0.0001, des='Exp', loss='mse', lradj='type3', pct_start=0.3, use_amp=False, use_gpu=False, gpu=0, use_multi_gpu=False, devices='0,1,2,3', test_flop=False)
+Use CPU
+>>>>>>>start training : Flatten_etth1_336_96_PatchTST_ETTh1_ftM_sl336_ll48_pl96_dm16_nh4_el3_dl1_df128_fc1_ebtimeF_dtTrue_Exp_0>>>>>>>>>>>>>>>>>>>>>>>>>>
+train 8209
+val 2785
+test 2785
+Epoch: 1 cost time: 18.376939296722412
+Epoch: 1, Steps: 64 | Train Loss: 0.7521940 Vali Loss: 1.5230757 Test Loss: 0.8504695
+Validation loss decreased (inf --> 1.523076).  Saving model ...
+Updating learning rate to 0.0001
+Epoch: 2 cost time: 13.987404823303223
+Epoch: 2, Steps: 64 | Train Loss: 0.7451557 Vali Loss: 1.5002378 Test Loss: 0.8309199
+Validation loss decreased (1.523076 --> 1.500238).  Saving model ...
+Updating learning rate to 0.0001
+Epoch: 3 cost time: 13.865626096725464
+Epoch: 3, Steps: 64 | Train Loss: 0.7333863 Vali Loss: 1.4725487 Test Loss: 0.8129132
+Validation loss decreased (1.500238 --> 1.472549).  Saving model ...
+Updating learning rate to 0.0001
+Epoch: 4 cost time: 13.876616954803467
+Epoch: 4, Steps: 64 | Train Loss: 0.7198766 Vali Loss: 1.4440013 Test Loss: 0.7962626
+Validation loss decreased (1.472549 --> 1.444001).  Saving model ...
+Updating learning rate to 9e-05
+Epoch: 5 cost time: 13.957220554351807
+Epoch: 5, Steps: 64 | Train Loss: 0.7085228 Vali Loss: 1.4240448 Test Loss: 0.7820919
+Validation loss decreased (1.444001 --> 1.424045).  Saving model ...
+Updating learning rate to 8.1e-05
+Epoch: 6 cost time: 13.9570152759552
+Epoch: 6, Steps: 64 | Train Loss: 0.6984581 Vali Loss: 1.4051418 Test Loss: 0.7706317
+Validation loss decreased (1.424045 --> 1.405142).  Saving model ...
+Updating learning rate to 7.290000000000001e-05
+Epoch: 7 cost time: 13.762568950653076
+Epoch: 7, Steps: 64 | Train Loss: 0.6909749 Vali Loss: 1.3919452 Test Loss: 0.7605241
+Validation loss decreased (1.405142 --> 1.391945).  Saving model ...
+Updating learning rate to 6.561e-05

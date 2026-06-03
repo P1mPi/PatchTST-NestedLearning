@@ -37,8 +37,12 @@ if __name__ == '__main__':
     # DLinear
     #parser.add_argument('--individual', action='store_true', default=False, help='DLinear: a linear layer for each variate(channel) individually')
 
-    # PatchTST
+    #NestedLearning
     parser.add_argument('--head_type', type=str, default='flatten', help='flatten o cms')
+    parser.add_argument('--cms_lr', type=float, default=0.0001, help='TTA learning rate')
+    parser.add_argument('--update_policy', type=str, default='spc', help='always, 5steps, spc')
+
+    # PatchTST
     parser.add_argument('--fc_dropout', type=float, default=0.05, help='fully connected dropout')
     parser.add_argument('--head_dropout', type=float, default=0.0, help='head dropout')
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
@@ -118,7 +122,7 @@ if __name__ == '__main__':
     if args.is_training:
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(
+            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}lr{}_pol{}_{}_{}'.format(
                 args.model_id,
                 args.model,
                 args.data,
@@ -134,6 +138,8 @@ if __name__ == '__main__':
                 args.factor,
                 args.embed,
                 args.distil,
+                args.cms_lr,
+                args.update_policy,
                 args.des,ii)
 
             exp = Exp(args)  # set experiments
@@ -150,22 +156,26 @@ if __name__ == '__main__':
             torch.cuda.empty_cache()
     else:
         ii = 0
-        setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}_{}_{}'.format(args.model_id,
-                                                                                                    args.model,
-                                                                                                    args.data,
-                                                                                                    args.features,
-                                                                                                    args.seq_len,
-                                                                                                    args.label_len,
-                                                                                                    args.pred_len,
-                                                                                                    args.d_model,
-                                                                                                    args.n_heads,
-                                                                                                    args.e_layers,
-                                                                                                    args.d_layers,
-                                                                                                    args.d_ff,
-                                                                                                    args.factor,
-                                                                                                    args.embed,
-                                                                                                    args.distil,
-                                                                                                    args.des, ii)
+        # Bloque ELSE: igualar el setting al del bloque IF
+        setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}lr{}_pol{}_{}_{}'.format(
+            args.model_id,
+            args.model,
+            args.data,
+            args.features,
+            args.seq_len,
+            args.label_len,
+            args.pred_len,
+            args.d_model,
+            args.n_heads,
+            args.e_layers,
+            args.d_layers,
+            args.d_ff,
+            args.factor,
+            args.embed,
+            args.distil,
+            args.cms_lr,       
+            args.update_policy, 
+            args.des, ii)
 
         exp = Exp(args)  # set experiments
         print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
