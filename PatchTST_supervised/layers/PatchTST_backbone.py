@@ -164,10 +164,13 @@ class CMS_Head(nn.Module):
         self.individual = individual
         self.n_vars = n_vars
 
-        #Definición del módulo. MLP con 2 capas
-        hidden_dim=128 #Esto habrá que pasarlo por parámetro
+        #LA CABEZA ESTÁTICA ORIGINAL
+        self.head_estatica = Flatten_Head(individual, n_vars, nf, target_window, head_dropout)
 
-        if self.individual: #Para respetar la independencia entre canales, cada canal tiene su propio MLP.
+        # 2. EL CMS DINÁMICO
+        hidden_dim = 128 
+
+        if self.individual: 
             self.mlps = nn.ModuleList()
             for i in range(self.n_vars):
                 self.mlps.append(nn.Sequential(
@@ -177,7 +180,7 @@ class CMS_Head(nn.Module):
                     nn.Dropout(head_dropout),
                     nn.Linear(hidden_dim, target_window)
                 ))
-        else:   #Si no se requiere independencia, solo se crea un MLP
+        else:   
             self.mlp = nn.Sequential(
                 nn.Flatten(start_dim=-2),
                 nn.Linear(nf, hidden_dim),
@@ -187,16 +190,18 @@ class CMS_Head(nn.Module):
             )
         
     def forward(self, x):
-        # x: [bs x nvars x d_model x patch_num]
+        
+        base_pred = self.head_estatica(x)
         if self.individual:
-            x_out =[]
+            x_out = []
             for i in range(self.n_vars):
-                z = self.mlps[i](x[:,i,:,:]) # Pasa por el MLP
+                z = self.mlps[i](x[:,i,:,:]) 
                 x_out.append(z)
-            x = torch.stack(x_out, dim=1)                 
+            cms_pred = torch.stack(x_out, dim=1)                 
         else:
-            x = self.mlp(x) # Hay un solo MLP 
-        return x 
+            cms_pred = self.mlp(x)
+        return base_pred + cms_pred 
+        
     
 class TSTiEncoder(nn.Module):  #i means channel-independent
     def __init__(self, c_in, patch_num, patch_len, max_seq_len=1024,
@@ -345,59 +350,53 @@ class CMS_Head_3L(nn.Module):
         super().__init__()
         self.individual = individual
         self.n_vars = n_vars
+        self.head_estatica = Flatten_Head(individual, n_vars, nf, target_window, head_dropout)
 
-        # Definición del módulo. MLP con 3 capas (2 ocultas + 1 de salida)
-        hidden_dim_1 = 128 # Neuronas de la primera capa oculta
-        hidden_dim_2 = 64  # Neuronas de la segunda capa oculta (estructura de embudo)
 
-        if self.individual: # Para respetar la independencia entre canales
+        hidden_dim_1 = 128 
+        hidden_dim_2 = 64  
+
+        if self.individual: 
             self.mlps = nn.ModuleList()
             for i in range(self.n_vars):
                 self.mlps.append(nn.Sequential(
                     nn.Flatten(start_dim=-2),
-                    
-                    # Capa Oculta 1
                     nn.Linear(nf, hidden_dim_1),
                     nn.GELU(),
                     nn.Dropout(head_dropout),
-                    
-                    # Capa Oculta 2 (¡NUEVA!)
                     nn.Linear(hidden_dim_1, hidden_dim_2),
                     nn.GELU(),
                     nn.Dropout(head_dropout),
-                    
-                    # Capa de Salida
                     nn.Linear(hidden_dim_2, target_window)
                 ))
-        else:   # Si no se requiere independencia, solo se crea un MLP global
+        else:   
             self.mlp = nn.Sequential(
                 nn.Flatten(start_dim=-2),
-                
-                # Capa Oculta 1
                 nn.Linear(nf, hidden_dim_1),
                 nn.GELU(),
                 nn.Dropout(head_dropout),
-                
-                # Capa Oculta 2 (¡NUEVA!)
                 nn.Linear(hidden_dim_1, hidden_dim_2),
                 nn.GELU(),
                 nn.Dropout(head_dropout),
-                
-                # Capa de Salida
                 nn.Linear(hidden_dim_2, target_window)
             )
         
     def forward(self, x):
-        # x: [bs x nvars x d_model x patch_num]
+
+        base_pred = self.head_estatica(x)
+    
         if self.individual:
-            x_out =[]
+            x_out = []
             for i in range(self.n_vars):
-                z = self.mlps[i](x[:,i,:,:]) # Pasa por el MLP de 3 capas
+                z = self.mlps[i](x[:,i,:,:]) 
                 x_out.append(z)
-            x = torch.stack(x_out, dim=1)                 
+            cms_pred = torch.stack(x_out, dim=1)                 
         else:
-            x = self.mlp(x) # Hay un solo MLP 
-        return x
+            cms_pred = self.mlp(x)
+            
+        # Retornamos la SUMA (Capa Residual)
+        return base_pred + cms_pred
+
 
 class _MultiheadAttention(nn.Module):
     def __init__(self, d_model, n_heads, d_k=None, d_v=None, res_attention=False, attn_dropout=0., proj_dropout=0., qkv_bias=True, lsa=False):

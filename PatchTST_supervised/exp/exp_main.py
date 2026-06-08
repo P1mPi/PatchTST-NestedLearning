@@ -46,8 +46,8 @@ class Exp_Main(Exp_Basic):
         return data_set, data_loader
 
     def _select_optimizer(self):
-        model_optim = M3Optimizer(self.model.parameters(), lr=self.args.learning_rate, alpha=0.1)
-        #model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
+        #model_optim = M3Optimizer(self.model.parameters(), lr=self.args.learning_rate, alpha=0.1)
+        model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         return model_optim
 
     def _select_criterion(self):
@@ -534,13 +534,14 @@ class Exp_Main(Exp_Basic):
 
             # Congelamos los gradientes de todo excepto del target
             for name, param in self.model.named_parameters():
-                if target_name in name:
+                if target_name in name and 'head_estatica' not in name:
                     param.requires_grad = True  # Fast weights (aprenden)
                 else:
                     param.requires_grad = False # Slow weights congelados
 
             # Optimizador con el LR dinámico
-            cms_optim = optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr, momentum=0.9)
+            cms_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr)
+            # cms_optim = optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr, momentum=0.9)
 
             torch.set_grad_enabled(True) 
             
