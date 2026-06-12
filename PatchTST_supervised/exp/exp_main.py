@@ -521,37 +521,35 @@ class Exp_Main(Exp_Basic):
         # NESTED LEARNING
         # Aquí entra 'cms', 'cms3' y también 'flatten_nl' si LR > 0
         else:
-            target_name = 'head'
-            print(f" Ejecutando Inferencia DINÁMICA (Nested Learning con {self.args.head_type})")
+            target_name = 'mid_cms' if getattr(self.args, 'use_mid_cms', 0) == 1 else 'head'
+            
+            print(f" Ejecutando Inferencia DINÁMICA (Nested Learning)")
             print(f"  -> Política: {self.args.update_policy} | LR: {self.args.cms_lr} | Target: {target_name}")
 
-            # Backbone en eval (BN y Dropout fijos), target en train
-            for name, module in self.model.named_modules():
-                if target_name in name:
-                    module.train()
-                else:
-                    module.eval()
-
+            self.model.eval()
             # Congelamos los gradientes de todo excepto del target
             for name, param in self.model.named_parameters():
                 if target_name in name and 'head_estatica' not in name:
                     param.requires_grad = True  # Fast weights (aprenden)
                 else:
-                    param.requires_grad = False # Slow weights congelados
+                    param.requires_grad = False # Slow weights (congelados)
 
             # Optimizador con el LR dinámico
             cms_optim = optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr)
-            # cms_optim = optim.SGD(filter(lambda p: p.requires_grad, self.model.parameters()), lr=self.args.cms_lr, momentum=0.9)
 
             torch.set_grad_enabled(True) 
             
-            prev_errors = None
+            historial_losses = []
+            window_size = 30 # Tamaño de la ventana para el cálculo del umbral dinámico
+            
             veces_actualizado = 0
             
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(test_loader):
                 batch_x   = batch_x.float().to(self.device)
                 batch_y   = batch_y.float().to(self.device)
 
+                # Si el target es 'head', desconectamos el backbone del grafo (cms_mode=True) para ahorrar RAM
+                # Si el target es 'mid_cms', el gradiente DEBE atravesar el backbone, así que no se desconecta (cms_mode=False)
                 do_detach = (target_name == 'head') 
                 outputs = self.model(batch_x, cms_mode=do_detach)
 
@@ -559,9 +557,8 @@ class Exp_Main(Exp_Basic):
                 outputs   = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y_s = batch_y[:, -self.args.pred_len:, f_dim:]
 
-                # Error escalar y punto a punto
+                # Error escalar del batch actual
                 loss = criterion(outputs, batch_y_s) 
-                point_errors = (outputs - batch_y_s) ** 2 
 
                 # CONTROL DEL TRIGGER DE ACTUALIZACIÓN
                 actualizar = False
@@ -570,26 +567,37 @@ class Exp_Main(Exp_Basic):
                 if policy == 'always':
                     actualizar = True
                 elif policy == '5steps':
-                    update_freq = 5
-                    if i % update_freq == 0:
+                    if i % 5 == 0:
                         actualizar = True
                 elif policy == 'spc':
-                    if prev_errors is not None:
-                        mu = prev_errors.mean()
-                        sigma = prev_errors.std()
-                        umbral = mu + (2.0 * sigma)
+                    # Si tenemos suficientes datos históricos para calcular una media y std fiables
+                    if len(historial_losses) > 5: 
+                        # Convertimos a tensor para usar matemáticas rápidas
+                        hist_tensor = torch.tensor(historial_losses)
+                        mu = hist_tensor.mean()
+                        sigma = hist_tensor.std()
+                        
+                        # Umbral estadístico real: Media histórica + 2 desviaciones
+                        umbral = mu + (1.0 * sigma)
                         
                         if loss.item() > umbral.item():
                             actualizar = True
+                            # Opcional: Descomenta esto para ver CÚANDO se dispara
+                            # print(f"Batch {i}: Drift detectado! Loss: {loss.item():.4f} > {umbral.item():.4f}")
 
                 # Backward y Step sobre el target
                 if actualizar:
                     cms_optim.zero_grad()
                     loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
                     cms_optim.step()
                     veces_actualizado += 1
 
-                prev_errors = point_errors.detach()
+                # Actualizamos la memoria histórica (DESPUÉS del trigger para no auto-sesgarlo)
+                # OJO: Guardamos el error del modelo ANTES de actualizar, para medir bien la degradación
+                historial_losses.append(loss.item())
+                if len(historial_losses) > window_size:
+                    historial_losses.pop(0) # Mantenemos solo los últimos 'window_size' elementos
 
                 # Guardar predicciones
                 pred = outputs.detach().cpu().numpy()

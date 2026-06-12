@@ -19,8 +19,8 @@ class PatchTST_backbone(nn.Module):
                  d_ff:int=256, norm:str='BatchNorm', attn_dropout:float=0., dropout:float=0., act:str="gelu", key_padding_mask:bool='auto',
                  padding_var:Optional[int]=None, attn_mask:Optional[Tensor]=None, res_attention:bool=True, pre_norm:bool=False, store_attn:bool=False,
                  pe:str='zeros', learn_pe:bool=True, fc_dropout:float=0., head_dropout = 0, padding_patch = None,
-                 pretrain_head:bool=False, head_type = 'flatten', individual = False, revin = True, affine = True, subtract_last = False,
-                 verbose:bool=False, **kwargs):
+                 pretrain_head:bool=False, head_type = 'flatten', individual = True, revin = True, affine = True, subtract_last = False,
+                 verbose:bool=False, use_mid_cms:bool=False, mid_position:int=0, **kwargs):
         
         super().__init__()
         
@@ -42,7 +42,7 @@ class PatchTST_backbone(nn.Module):
                                 n_layers=n_layers, d_model=d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff,
                                 attn_dropout=attn_dropout, dropout=dropout, act=act, key_padding_mask=key_padding_mask, padding_var=padding_var,
                                 attn_mask=attn_mask, res_attention=res_attention, pre_norm=pre_norm, store_attn=store_attn,
-                                pe=pe, learn_pe=learn_pe, verbose=verbose, **kwargs)
+                                pe=pe, learn_pe=learn_pe, verbose=verbose, use_mid_cms=use_mid_cms, mid_position=mid_position, **kwargs)
 
         # Head
         self.head_nf = d_model * patch_num
@@ -141,6 +141,7 @@ class Flatten_Head(nn.Module):
             self.linear = nn.Linear(nf, target_window)
             self.dropout = nn.Dropout(head_dropout)
             
+            
     def forward(self, x):                                 # x: [bs x nvars x d_model x patch_num]
         if self.individual:
             x_out = []
@@ -189,6 +190,14 @@ class CMS_Head(nn.Module):
                 nn.Linear(hidden_dim, target_window)
             )
         
+        if self.individual:
+            for i in range(self.n_vars):
+                nn.init.zeros_(self.mlps[i][-1].weight)
+                nn.init.zeros_(self.mlps[i][-1].bias)
+        else:
+            nn.init.zeros_(self.mlp[-1].weight)
+            nn.init.zeros_(self.mlp[-1].bias)
+
     def forward(self, x):
         
         base_pred = self.head_estatica(x)
@@ -208,7 +217,7 @@ class TSTiEncoder(nn.Module):  #i means channel-independent
                  n_layers=3, d_model=128, n_heads=16, d_k=None, d_v=None,
                  d_ff=256, norm='BatchNorm', attn_dropout=0., dropout=0., act="gelu", store_attn=False,
                  key_padding_mask='auto', padding_var=None, attn_mask=None, res_attention=True, pre_norm=False,
-                 pe='zeros', learn_pe=True, verbose=False, **kwargs):
+                 pe='zeros', learn_pe=True, verbose=False, use_mid_cms=False, mid_position=0, **kwargs):
         
         
         super().__init__()
@@ -229,7 +238,7 @@ class TSTiEncoder(nn.Module):  #i means channel-independent
 
         # Encoder
         self.encoder = TSTEncoder(q_len, d_model, n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm, attn_dropout=attn_dropout, dropout=dropout,
-                                   pre_norm=pre_norm, activation=act, res_attention=res_attention, n_layers=n_layers, store_attn=store_attn)
+                                   pre_norm=pre_norm, activation=act, res_attention=res_attention, n_layers=n_layers, store_attn=store_attn, use_mid_cms=use_mid_cms, mid_position=mid_position)
 
         
     def forward(self, x) -> Tensor:                                              # x: [bs x nvars x patch_len x patch_num]
@@ -249,13 +258,29 @@ class TSTiEncoder(nn.Module):  #i means channel-independent
         
         return z    
             
+#Mid CMS
+class Mid_CMS(nn.Module):
+    def __init__(self, d_model, hidden_dim=64, dropout=0.1):
+        super().__init__()
+        # Un MLP simple que mantiene las dimensiones intactas
+        self.adaptador = nn.Sequential(
+            nn.Linear(d_model, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, d_model)
+        )
+
+    #Lo hacemos residual para evitar destrozos    
+    def forward(self, x):
+        return x+self.adaptador(x)
+
             
     
 # Cell
 class TSTEncoder(nn.Module):
     def __init__(self, q_len, d_model, n_heads, d_k=None, d_v=None, d_ff=None, 
                         norm='BatchNorm', attn_dropout=0., dropout=0., activation='gelu',
-                        res_attention=False, n_layers=1, pre_norm=False, store_attn=False):
+                        res_attention=False, n_layers=1, pre_norm=False, store_attn=False, use_mid_cms=False, mid_position=0):
         super().__init__()
 
         self.layers = nn.ModuleList([TSTEncoderLayer(q_len, d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
@@ -263,16 +288,25 @@ class TSTEncoder(nn.Module):
                                                       activation=activation, res_attention=res_attention,
                                                       pre_norm=pre_norm, store_attn=store_attn) for i in range(n_layers)])
         self.res_attention = res_attention
+        self.use_mid_cms = use_mid_cms
+        self.mid_position = mid_position
+        if self.use_mid_cms:
+            self.mid_cms = Mid_CMS(d_model=d_model)
 
     def forward(self, src:Tensor, key_padding_mask:Optional[Tensor]=None, attn_mask:Optional[Tensor]=None):
         output = src
         scores = None
-        if self.res_attention:
-            for mod in self.layers: output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-            return output
-        else:
-            for mod in self.layers: output = mod(output, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
-            return output
+        for i, mod in enumerate(self.layers):
+            if self.res_attention:
+                output, scores = mod(output, prev=scores, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            else:
+                output = mod(output, key_padding_mask=key_padding_mask, attn_mask=attn_mask)
+            
+            # El trigger de inyección usa la posición configurada
+            if self.use_mid_cms and i == self.mid_position:
+                output = self.mid_cms(output)
+        
+        return output
 
 
 
@@ -380,6 +414,13 @@ class CMS_Head_3L(nn.Module):
                 nn.Dropout(head_dropout),
                 nn.Linear(hidden_dim_2, target_window)
             )
+        if self.individual:
+            for i in range(self.n_vars):
+                nn.init.zeros_(self.mlps[i][-1].weight)
+                nn.init.zeros_(self.mlps[i][-1].bias)
+        else:
+            nn.init.zeros_(self.mlp[-1].weight)
+            nn.init.zeros_(self.mlp[-1].bias)
         
     def forward(self, x):
 
@@ -505,4 +546,3 @@ class _ScaledDotProductAttention(nn.Module):
 
         if self.res_attention: return output, attn_weights, attn_scores
         else: return output, attn_weights
-

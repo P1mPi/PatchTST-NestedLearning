@@ -41,6 +41,8 @@ if __name__ == '__main__':
     parser.add_argument('--head_type', type=str, default='flatten', help='flatten o cms')
     parser.add_argument('--cms_lr', type=float, default=0.0001, help='TTA learning rate')
     parser.add_argument('--update_policy', type=str, default='spc', help='always, 5steps, spc')
+    parser.add_argument('--use_mid_cms', type=int, default=0, help='Usar mid_cms intermedio (1: True, 0: False)')
+    parser.add_argument('--mid_position', type=int, default=0, help='Posicion (indice de la capa) donde inyectar el mid_cms')
 
     # PatchTST
     parser.add_argument('--fc_dropout', type=float, default=0.05, help='fully connected dropout')
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--subtract_last', type=int, default=0, help='0: subtract mean; 1: subtract last')
     parser.add_argument('--decomposition', type=int, default=0, help='decomposition; True 1 False 0')
     parser.add_argument('--kernel_size', type=int, default=25, help='decomposition-kernel')
-    parser.add_argument('--individual', type=int, default=0, help='individual head; True 1 False 0')
+    parser.add_argument('--individual', type=int, default=1, help='individual head; True 1 False 0')
 
     # Formers 
     parser.add_argument('--embed_type', type=int, default=0, help='0: default 1: value embedding + temporal embedding + positional embedding 2: value embedding + temporal embedding 3: value embedding + positional embedding 4: value embedding')
@@ -122,7 +124,7 @@ if __name__ == '__main__':
     if args.is_training:
         for ii in range(args.itr):
             # setting record of experiments
-            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}lr{}_pol{}_{}_{}'.format(
+            setting = '{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_fc{}_eb{}_dt{}lr{}_pol_{}_{}_{}'.format(
                 args.model_id,
                 args.model,
                 args.data,

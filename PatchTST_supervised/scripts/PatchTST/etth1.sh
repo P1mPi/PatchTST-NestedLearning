@@ -2,7 +2,9 @@ MI_MODEL_ID=${1:-"Experimento"}
 MI_DES=${2:-"Sin_Descripcion"}
 CABECERA=${3:-"flatten"}
 CMS_LR=${4:-"0.0001"}       
-POLICY=${5:-"spc"}          
+POLICY=${5:-"spc"}
+USE_MID_CMS=${6:-0}         
+MID_POSITION=${7:-0}           
 
 
 
@@ -47,6 +49,8 @@ do
       --head_type ${CABECERA} \
       --cms_lr "$CMS_LR" \
       --update_policy "$POLICY" \
+      --use_mid_cms "$USE_MID_CMS" \
+      --mid_position "$MID_POSITION" \
       --patch_len 16 \
       --stride 8\
       --train_epochs 100 \
